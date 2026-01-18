@@ -1,21 +1,35 @@
+import { app } from "./app.js";
+import { env } from "./config/index.js";
+import { logger } from "./common/logger.js";
 
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
+const PORT = env.port;
 
-dotenv.config();
-
-const app = express();
-
-app.use(cors());
-app.use(express.json());
-
-app.get("/health", (req, res) => {
-  res.json({ status: "OK", message: "Server is running" });
+const server = app.listen(PORT, () => {
+  logger.info(`Server running on port ${PORT}`);
 });
 
-const PORT = process.env.PORT || 3000;
+const shutdown = (signal) => {
+  logger.info(`Received ${signal}, shutting down gracefully`);
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  server.close(() => {
+    logger.info("HTTP server closed");
+    process.exit(0);
+  });
+};
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
+
+process.on("uncaughtException", (error) => {
+  logger.error("Uncaught exception", {
+    message: error?.message,
+    stack: error?.stack,
+  });
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason) => {
+  logger.error("Unhandled rejection", {
+    reason,
+  });
 });
