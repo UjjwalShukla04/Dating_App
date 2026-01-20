@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/route_paths.dart';
+import '../../../services/profile_service.dart';
+import '../../../services/api_service.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -12,9 +14,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
-  
+  final ProfileService _profileService = ProfileService();
+
   String _selectedGender = 'Male';
   DateTime? _selectedDate;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -26,7 +30,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().subtract(const Duration(days: 365 * 18)), // 18 years ago
+      initialDate: DateTime.now().subtract(
+        const Duration(days: 365 * 18),
+      ), // 18 years ago
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
     );
@@ -37,7 +43,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     }
   }
 
-  void _onContinue() {
+  Future<void> _onContinue() async {
     if (_formKey.currentState!.validate()) {
       if (_selectedDate == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -45,20 +51,50 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         );
         return;
       }
-      
-      // In a real app, we would send data to backend here.
-      // For now, just navigate to Home.
-      Navigator.of(context).pushReplacementNamed(RoutePaths.home);
+
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        await _profileService.saveProfile(
+          fullName: _nameController.text.trim(),
+          gender: _selectedGender,
+          dob: _selectedDate!,
+          bio: _bioController.text.trim(),
+        );
+
+        if (!mounted) return;
+
+        Navigator.of(context).pushReplacementNamed(RoutePaths.home);
+      } catch (e) {
+        if (!mounted) return;
+
+        String message = 'Failed to save profile';
+        if (e is ApiException) {
+          message = e.message;
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Setup Profile'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Setup Profile'), centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Form(
@@ -68,14 +104,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             children: [
               const Text(
                 'Tell us about yourself',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
-              
+
               // Full Name
               TextFormField(
                 controller: _nameController,
@@ -94,7 +127,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 },
               ),
               const SizedBox(height: 24),
-              
+
               // Gender Selection
               const Text(
                 'Gender',
@@ -129,7 +162,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-              
+
               // Date of Birth
               InkWell(
                 onTap: () => _selectDate(context),
@@ -147,13 +180,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         ? 'Select Date'
                         : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
                     style: TextStyle(
-                      color: _selectedDate == null ? Colors.grey : Colors.black87,
+                      color: _selectedDate == null
+                          ? Colors.grey
+                          : Colors.black87,
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Short Bio
               TextFormField(
                 controller: _bioController,
@@ -174,20 +209,26 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 },
               ),
               const SizedBox(height: 40),
-              
+
               // Continue Button
               ElevatedButton(
-                onPressed: _onContinue,
+                onPressed: _isLoading ? null : _onContinue,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Continue',
-                  style: TextStyle(fontSize: 18),
-                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Continue', style: TextStyle(fontSize: 18)),
               ),
             ],
           ),
@@ -216,9 +257,7 @@ class _GenderChip extends StatelessWidget {
       onSelected: onSelected,
       checkmarkColor: Colors.white,
       selectedColor: Theme.of(context).primaryColor,
-      labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Colors.black87,
-      ),
+      labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(

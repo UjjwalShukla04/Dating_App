@@ -52,7 +52,16 @@ const verifyOtpForPhone = (phone, otp) => {
 
   otpStore.delete(phone);
 
-  const payload = { phone };
+  // Find or create user
+  let user = findUserByPhone(phone);
+  if (!user) {
+    user = createUser(phone);
+  }
+
+  const payload = { 
+    phone,
+    id: user.id 
+  };
 
   const token = jwt.sign(payload, env.jwtSecret, {
     expiresIn: env.jwtExpiresIn,

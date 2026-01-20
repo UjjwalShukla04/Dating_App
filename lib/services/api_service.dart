@@ -16,29 +16,33 @@ class ApiException implements Exception {
 
 class ApiService {
   ApiService({http.Client? client, String? baseUrl})
-      : _client = client ?? http.Client(),
-        _baseUrl = baseUrl ?? ApiConstants.baseUrl;
+    : _client = client ?? http.Client(),
+      _baseUrl = baseUrl ?? ApiConstants.baseUrl;
 
   final http.Client _client;
   final String _baseUrl;
 
   Future<Map<String, dynamic>> post(
     String path,
-    Map<String, dynamic> body,
-  ) async {
+    Map<String, dynamic> body, {
+    String? token,
+  }) async {
     final uri = Uri.parse('$_baseUrl$path');
+    final headers = <String, String>{'Content-Type': 'application/json'};
+
+    if (token != null) {
+      headers['Authorization'] = 'Bearer $token';
+    }
 
     final response = await _client.post(
       uri,
-      headers: const {
-        'Content-Type': 'application/json',
-      },
+      headers: headers,
       body: jsonEncode(body),
     );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
-        'Request failed',
+        'Request failed with status: ${response.statusCode}',
         statusCode: response.statusCode,
       );
     }
@@ -48,7 +52,8 @@ class ApiService {
     }
 
     final decoded =
-        jsonDecode(response.body) as Map<String, dynamic>? ?? <String, dynamic>{};
+        jsonDecode(response.body) as Map<String, dynamic>? ??
+        <String, dynamic>{};
 
     final success = decoded['success'];
     if (success is bool && !success) {
@@ -56,11 +61,11 @@ class ApiService {
       throw ApiException(message, statusCode: response.statusCode);
     }
 
-    final data = decoded.containsKey('data') && decoded['data'] is Map<String, dynamic>
+    final data =
+        decoded.containsKey('data') && decoded['data'] is Map<String, dynamic>
         ? decoded['data'] as Map<String, dynamic>
         : decoded;
 
     return data;
   }
 }
-

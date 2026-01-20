@@ -16,4 +16,6 @@ class ApiConstants {
 
   static const String sendOtpPath = '/auth/send-otp';
   static const String verifyOtpPath = '/auth/verify-otp';
+  static const String profilePath = '/profile';
+  static const String profileMePath = '/profile/me';
 }

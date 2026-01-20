@@ -1,9 +1,11 @@
 import express from "express";
 import cors from "cors";
 
+import { routes } from "./routes/index.js";
 import { sendSuccess } from "./common/response.js";
 import { errorHandler, notFoundHandler } from "./common/error.handler.js";
 import { sendOtp, verifyOtp } from "./modules/auth/auth.controller.js";
+import { profileRoutes } from "./modules/profile/profile.routes.js";
 import { logger } from "./common/logger.js";
 
 const app = express();
@@ -22,6 +24,8 @@ app.get("/health", (req, res) => {
 
 app.post("/auth/send-otp", sendOtp);
 app.post("/auth/verify-otp", verifyOtp);
+
+app.use("/profile", profileRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
