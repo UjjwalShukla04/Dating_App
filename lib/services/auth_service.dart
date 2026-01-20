@@ -2,26 +2,25 @@ import '../core/constants/api_constants.dart';
 import 'api_service.dart';
 
 class AuthService {
-  AuthService({ApiService? apiService}) : _apiService = apiService ?? ApiService();
+  AuthService({ApiService? apiService})
+    : _apiService = apiService ?? ApiService();
 
   final ApiService _apiService;
 
-  Future<void> sendOtp(String phone) async {
-    await _apiService.post(
+  Future<String?> sendOtp(String phone) async {
+    final response = await _apiService.post(
       ApiConstants.sendOtpPath,
-      <String, dynamic>{
-        'phone': phone,
-      },
+      <String, dynamic>{'phone': phone},
     );
+
+    // In development, we return the OTP in the response for testing
+    return response['otp']?.toString();
   }
 
   Future<String> verifyOtp(String phone, String otp) async {
     final data = await _apiService.post(
       ApiConstants.verifyOtpPath,
-      <String, dynamic>{
-        'phone': phone,
-        'otp': otp,
-      },
+      <String, dynamic>{'phone': phone, 'otp': otp},
     );
 
     final token = data['token'] as String?;
@@ -32,4 +31,3 @@ class AuthService {
     return token;
   }
 }
-

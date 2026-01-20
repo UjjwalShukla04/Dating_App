@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/route_paths.dart';
+import '../../../services/api_service.dart';
 import '../../../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -39,16 +40,35 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      await _authService.sendOtp(phone);
+      final otp = await _authService.sendOtp(phone);
 
       if (!mounted) {
         return;
       }
 
+      if (otp != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Development OTP: $otp'),
+            duration: const Duration(seconds: 10),
+            action: SnackBarAction(
+              label: 'COPY',
+              onPressed: () {
+                // TODO: Copy to clipboard if needed
+              },
+            ),
+          ),
+        );
+      }
+
       Navigator.of(context).pushNamed(RoutePaths.otp, arguments: phone);
-    } catch (_) {
+    } catch (error) {
+      String message = 'Failed to send OTP';
+      if (error is ApiException) {
+        message = error.message;
+      }
       setState(() {
-        _error = 'Failed to send OTP';
+        _error = message;
       });
     } finally {
       if (mounted) {

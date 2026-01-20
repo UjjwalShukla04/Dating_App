@@ -4,7 +4,7 @@ dotenv.config();
 
 const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
-  port: Number.parseInt(process.env.PORT ?? "3000", 10),
+  port: Number.parseInt(process.env.PORT ?? "4000", 10),
   jwtSecret:
     process.env.JWT_SECRET ||
     (process.env.NODE_ENV === "production"
