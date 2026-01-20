@@ -51,7 +51,7 @@ class _OtpScreenState extends State<OtpScreen> {
         return;
       }
 
-      Navigator.of(context).pushReplacementNamed(RoutePaths.home);
+      Navigator.of(context).pushReplacementNamed(RoutePaths.profileSetup);
     } catch (_) {
       setState(() {
         _error = 'Failed to verify OTP';

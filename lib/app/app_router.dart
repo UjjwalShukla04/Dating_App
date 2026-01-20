@@ -4,6 +4,7 @@ import '../core/constants/route_paths.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/otp_screen.dart';
 import '../features/home/presentation/home_screen.dart';
+import '../features/profile/presentation/profile_setup_screen.dart';
 
 class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -14,6 +15,10 @@ class AppRouter {
         final phone = settings.arguments as String?;
         return MaterialPageRoute<void>(
           builder: (_) => OtpScreen(phone: phone ?? ''),
+        );
+      case RoutePaths.profileSetup:
+        return MaterialPageRoute<void>(
+          builder: (_) => const ProfileSetupScreen(),
         );
       case RoutePaths.home:
         return MaterialPageRoute<void>(builder: (_) => const HomeScreen());
