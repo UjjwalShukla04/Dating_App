@@ -72,7 +72,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
         String message = 'Failed to save profile';
         if (e is ApiException) {
-          message = e.message;
+          message = e
+              .toString()
+              .replaceAll('ApiException', '')
+              .replaceAll('Exception', '')
+              .trim();
+          if (message.startsWith(':')) message = message.substring(1).trim();
+        } else {
+          message = e.toString();
         }
 
         ScaffoldMessenger.of(context).showSnackBar(

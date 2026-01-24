@@ -22,6 +22,7 @@ const createOrUpdateProfile = (userId, profileData) => {
     profile = {
       id: uuidv4(),
       user_id: userId,
+      userId: userId,
       ...profileData,
       created_at: now,
       updated_at: now,
@@ -50,4 +51,9 @@ const createUser = (phone) => {
   return user;
 };
 
-export { createOrUpdateProfile, getProfileByUserId, findUserByPhone, createUser };
+export {
+  createOrUpdateProfile,
+  getProfileByUserId,
+  findUserByPhone,
+  createUser,
+};

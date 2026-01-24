@@ -18,12 +18,14 @@ class AuthService {
   }
 
   Future<String> verifyOtp(String phone, String otp) async {
-    final data = await _apiService.post(
+    final response = await _apiService.post(
       ApiConstants.verifyOtpPath,
       <String, dynamic>{'phone': phone, 'otp': otp},
     );
 
-    final token = data['token'] as String?;
+    final data = response['data'] as Map<String, dynamic>?;
+    final token = data?['token'] as String?;
+
     if (token == null || token.isEmpty) {
       throw ApiException('Missing token in response');
     }

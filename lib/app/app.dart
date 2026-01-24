@@ -12,9 +12,8 @@ class App extends StatelessWidget {
     return MaterialApp(
       title: 'IFeelO',
       theme: AppTheme.light,
-      initialRoute: RoutePaths.login,
+      initialRoute: RoutePaths.splash,
       onGenerateRoute: AppRouter.onGenerateRoute,
     );
   }
 }
-

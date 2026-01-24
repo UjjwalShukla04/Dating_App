@@ -5,9 +5,10 @@ import '../../../services/auth_service.dart';
 import '../../../services/token_storage.dart';
 
 class OtpScreen extends StatefulWidget {
-  const OtpScreen({super.key, required this.phone});
+  const OtpScreen({super.key, required this.phone, this.otp});
 
   final String phone;
+  final String? otp;
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -20,6 +21,18 @@ class _OtpScreenState extends State<OtpScreen> {
 
   bool _isLoading = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    // If we have a dev OTP, let's pre-fill it or show it
+    if (widget.otp != null) {
+      // Option 1: Pre-fill
+      // _otpController.text = widget.otp!;
+
+      // Option 2: Just log/print it, but we will show it in UI below
+    }
+  }
 
   @override
   void dispose() {
@@ -52,9 +65,14 @@ class _OtpScreenState extends State<OtpScreen> {
       }
 
       Navigator.of(context).pushReplacementNamed(RoutePaths.profileSetup);
-    } catch (_) {
+    } catch (e) {
       setState(() {
-        _error = 'Failed to verify OTP';
+        _error = e
+            .toString()
+            .replaceAll('ApiException', '')
+            .replaceAll('Exception', '')
+            .trim();
+        if (_error!.startsWith(':')) _error = _error!.substring(1).trim();
       });
     } finally {
       if (mounted) {
@@ -79,6 +97,33 @@ class _OtpScreenState extends State<OtpScreen> {
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: 'OTP'),
             ),
+            if (widget.otp != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.amber),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.developer_mode,
+                      size: 16,
+                      color: Colors.amber,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Dev OTP: ${widget.otp}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             if (_error != null) ...[
               Text(

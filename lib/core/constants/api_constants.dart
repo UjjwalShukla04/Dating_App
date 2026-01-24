@@ -18,4 +18,8 @@ class ApiConstants {
   static const String verifyOtpPath = '/auth/verify-otp';
   static const String profilePath = '/profile';
   static const String profileMePath = '/profile/me';
+  static const String discoverPath = '/swipe/discover';
+  static const String swipePath = '/swipe';
+  static const String matchesPath = '/matches';
+  static const String messagesPath = '/messages';
 }

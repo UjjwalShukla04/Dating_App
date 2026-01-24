@@ -61,11 +61,15 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
 
-      Navigator.of(context).pushNamed(RoutePaths.otp, arguments: phone);
+      Navigator.of(
+        context,
+      ).pushNamed(RoutePaths.otp, arguments: {'phone': phone, 'otp': otp});
     } catch (error) {
       String message = 'Failed to send OTP';
       if (error is ApiException) {
         message = error.message;
+      } else {
+        message = 'Error: $error';
       }
       setState(() {
         _error = message;

@@ -40,6 +40,23 @@ class ApiService {
       body: jsonEncode(body),
     );
 
+    return _handleResponse(response);
+  }
+
+  Future<Map<String, dynamic>> get(String path, {String? token}) async {
+    final uri = Uri.parse('$_baseUrl$path');
+    final headers = <String, String>{'Content-Type': 'application/json'};
+
+    if (token != null) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+
+    final response = await _client.get(uri, headers: headers);
+
+    return _handleResponse(response);
+  }
+
+  Map<String, dynamic> _handleResponse(http.Response response) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         'Request failed with status: ${response.statusCode}',
@@ -61,11 +78,8 @@ class ApiService {
       throw ApiException(message, statusCode: response.statusCode);
     }
 
-    final data =
-        decoded.containsKey('data') && decoded['data'] is Map<String, dynamic>
-        ? decoded['data'] as Map<String, dynamic>
-        : decoded;
-
-    return data;
+    // Return the full decoded response so services can access 'data' or other fields as needed
+    // The previous logic of extracting 'data' conditionally was confusing for Lists.
+    return decoded;
   }
 }
