@@ -19,7 +19,7 @@ const getDiscoverProfiles = async (userId) => {
 const recordSwipe = async (fromUserId, toUserId, action) => {
   // Check if already swiped
   const existingSwipe = db.swipes.find(
-    (s) => s.fromUserId === fromUserId && s.toUserId === toUserId
+    (s) => s.fromUserId === fromUserId && s.toUserId === toUserId,
   );
 
   if (existingSwipe) {
@@ -45,7 +45,7 @@ const recordSwipe = async (fromUserId, toUserId, action) => {
       (s) =>
         s.fromUserId === toUserId &&
         s.toUserId === fromUserId &&
-        s.action === "like"
+        s.action === "like",
     );
 
     if (reverseSwipe) {
@@ -57,7 +57,7 @@ const recordSwipe = async (fromUserId, toUserId, action) => {
 
       // Check if match already exists (shouldn't if swipe logic is correct, but safe to check)
       const existingMatch = db.matches.find(
-        (m) => m.user1Id === user1Id && m.user2Id === user2Id
+        (m) => m.user1Id === user1Id && m.user2Id === user2Id,
       );
 
       if (!existingMatch) {
@@ -77,4 +77,10 @@ const recordSwipe = async (fromUserId, toUserId, action) => {
   return { swipe, match };
 };
 
-export { getDiscoverProfiles, recordSwipe };
+const resetSwipes = async (userId) => {
+  // Filter out swipes made by this user
+  db.swipes = db.swipes.filter((s) => s.fromUserId !== userId);
+  return { success: true };
+};
+
+export { getDiscoverProfiles, recordSwipe, resetSwipes };

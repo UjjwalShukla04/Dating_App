@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/route_paths.dart';
 import '../../../services/swipe_service.dart';
 
 class SwipeScreen extends StatefulWidget {
@@ -61,7 +62,7 @@ class _SwipeScreenState extends State<SwipeScreen> {
       );
 
       if (result['match'] != null) {
-        _showMatchDialog(profile);
+        _showMatchDialog(profile, result['match']);
       }
     } catch (e) {
       ScaffoldMessenger.of(
@@ -73,27 +74,61 @@ class _SwipeScreenState extends State<SwipeScreen> {
     }
   }
 
-  void _showMatchDialog(dynamic profile) {
+  void _showMatchDialog(dynamic profile, dynamic match) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("It's a Match! 🎉"),
-        content: Text("You and ${profile['fullName']} liked each other!"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (profile['photoUrl'] != null)
+              CircleAvatar(
+                radius: 40,
+                backgroundImage: NetworkImage(profile['photoUrl']),
+              ),
+            const SizedBox(height: 16),
+            Text("You and ${profile['fullName']} liked each other!"),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Keep Swiping'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              // Ideally navigate to chat, but strictly forbidden in this phase
+              Navigator.pushNamed(
+                context,
+                RoutePaths.chat,
+                arguments: {
+                  'matchId': match['id'],
+                  'otherUserName': profile['fullName'],
+                  'otherUserPhotoUrl': profile['photoUrl'],
+                },
+              );
             },
             child: const Text('Say Hello'),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _resetSwipes() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+      await _swipeService.resetSwipes();
+      await _loadProfiles();
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _error = e.toString();
+      });
+    }
   }
 
   @override
@@ -119,11 +154,26 @@ class _SwipeScreenState extends State<SwipeScreen> {
     }
 
     if (_profiles.isEmpty) {
-      return const Center(
-        child: Text(
-          'No more profiles to discover.\nCheck back later!',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 18, color: Colors.grey),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'No more profiles to discover.\nCheck back later!',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 18, color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _resetSwipes,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Reset Swipes (Dev Only)'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber.shade100,
+                foregroundColor: Colors.brown,
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -150,14 +200,22 @@ class _SwipeScreenState extends State<SwipeScreen> {
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(16),
                         ),
+                        image: profile['photoUrl'] != null
+                            ? DecorationImage(
+                                image: NetworkImage(profile['photoUrl']),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
                       ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.person,
-                          size: 100,
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: profile['photoUrl'] == null
+                          ? const Center(
+                              child: Icon(
+                                Icons.person,
+                                size: 100,
+                                color: Colors.white,
+                              ),
+                            )
+                          : null,
                     ),
                   ),
                   Padding(

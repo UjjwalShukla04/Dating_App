@@ -3,11 +3,9 @@ import 'api_service.dart';
 import 'token_storage.dart';
 
 class SwipeService {
-  SwipeService({
-    ApiService? apiService,
-    TokenStorage? tokenStorage,
-  })  : _apiService = apiService ?? ApiService(),
-        _tokenStorage = tokenStorage ?? TokenStorage();
+  SwipeService({ApiService? apiService, TokenStorage? tokenStorage})
+    : _apiService = apiService ?? ApiService(),
+      _tokenStorage = tokenStorage ?? TokenStorage();
 
   final ApiService _apiService;
   final TokenStorage _tokenStorage;
@@ -36,14 +34,24 @@ class SwipeService {
     }
 
     final response = await _apiService.post(
-      ApiConstants.swipePath,
-      <String, dynamic>{
-        'toUserId': toUserId,
-        'action': action,
-      },
+      '${ApiConstants.swipePath}/action',
+      <String, dynamic>{'toUserId': toUserId, 'action': action},
       token: token,
     );
 
     return response['data'] as Map<String, dynamic>;
+  }
+
+  Future<void> resetSwipes() async {
+    final token = await _tokenStorage.getToken();
+    if (token == null) {
+      throw ApiException('Not authenticated');
+    }
+
+    await _apiService.post(
+      '${ApiConstants.swipePath}/reset',
+      <String, dynamic>{},
+      token: token,
+    );
   }
 }

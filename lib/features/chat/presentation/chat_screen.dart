@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/message_service.dart';
+import '../../../services/socket_service.dart';
 import '../../../services/token_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 
@@ -21,6 +22,7 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final MessageService _messageService = MessageService();
+  final SocketService _socketService = SocketService();
   final TokenStorage _tokenStorage = TokenStorage();
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -35,6 +37,35 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _loadCurrentUser();
     _loadMessages();
+    _initSocket();
+  }
+
+  Future<void> _initSocket() async {
+    await _socketService.connect();
+    if (!mounted) return;
+    _socketService.joinRoom(widget.matchId);
+    _socketService.onMessage(_onNewMessage);
+  }
+
+  void _onNewMessage(dynamic message) {
+    if (!mounted) return;
+    setState(() {
+      // Deduplicate: Check if message with same ID exists
+      // This helps if we switch strategies later or receive duplicates
+      final exists = _messages.any((m) => m['id'] == message['id']);
+      if (!exists) {
+        _messages.add(message);
+      }
+    });
+    _scrollToBottom();
+  }
+
+  @override
+  void dispose() {
+    _socketService.offMessage();
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCurrentUser() async {
@@ -83,7 +114,22 @@ class _ChatScreenState extends State<ChatScreen> {
 
     _controller.clear();
 
-    // Optimistic update
+    if (_socketService.isConnected) {
+      try {
+        _socketService.sendMessage(widget.matchId, content);
+        // Message will be added via _onNewMessage
+        return;
+      } catch (e) {
+        // Fallback to REST if socket emit fails
+      }
+    }
+
+    // Fallback: REST API
+    await _sendRestMessage(content);
+  }
+
+  Future<void> _sendRestMessage(String content) async {
+    // Optimistic update for REST
     final tempMessage = {
       'id': 'temp-${DateTime.now().millisecondsSinceEpoch}',
       'senderId': _currentUserId,
@@ -101,7 +147,7 @@ class _ChatScreenState extends State<ChatScreen> {
         widget.matchId,
         content,
       );
-      
+
       if (!mounted) return;
 
       // Replace temp message with real one
@@ -110,15 +156,14 @@ class _ChatScreenState extends State<ChatScreen> {
         if (index != -1) {
           _messages[index] = savedMessage;
         } else {
-          // Fallback if index lost (unlikely)
           _messages.add(savedMessage);
         }
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to send message: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to send message: $e')));
       // Remove temp message
       setState(() {
         _messages.removeWhere((m) => m['id'] == tempMessage['id']);
@@ -150,10 +195,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadMessages,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadMessages),
         ],
       ),
       body: Column(
@@ -162,70 +204,69 @@ class _ChatScreenState extends State<ChatScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('Error: $_error'),
-                            ElevatedButton(
-                              onPressed: () {
-                                setState(() {
-                                  _isLoading = true;
-                                  _error = null;
-                                });
-                                _loadMessages();
-                              },
-                              child: const Text('Retry'),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Error: $_error'),
+                        ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _isLoading = true;
+                              _error = null;
+                            });
+                            _loadMessages();
+                          },
+                          child: const Text('Retry'),
                         ),
-                      )
-                    : _messages.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'No messages yet.\nSay hello! 👋',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          )
-                        : ListView.builder(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.all(16),
-                            itemCount: _messages.length,
-                            itemBuilder: (context, index) {
-                              final message = _messages[index];
-                              final isMe = message['senderId'] == _currentUserId;
+                      ],
+                    ),
+                  )
+                : _messages.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No messages yet.\nSay hello! 👋',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  )
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      final message = _messages[index];
+                      final isMe = message['senderId'] == _currentUserId;
 
-                              return Align(
-                                alignment: isMe
-                                    ? Alignment.centerRight
-                                    : Alignment.centerLeft,
-                                child: Container(
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 10,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isMe
-                                        ? Theme.of(context).primaryColor
-                                        : Colors.grey[300],
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  constraints: BoxConstraints(
-                                    maxWidth:
-                                        MediaQuery.of(context).size.width * 0.7,
-                                  ),
-                                  child: Text(
-                                    message['content'],
-                                    style: TextStyle(
-                                      color: isMe ? Colors.white : Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
+                      return Align(
+                        alignment: isMe
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
                           ),
+                          decoration: BoxDecoration(
+                            color: isMe
+                                ? Theme.of(context).primaryColor
+                                : Colors.grey[300],
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          constraints: BoxConstraints(
+                            maxWidth: MediaQuery.of(context).size.width * 0.7,
+                          ),
+                          child: Text(
+                            message['content'],
+                            style: TextStyle(
+                              color: isMe ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),

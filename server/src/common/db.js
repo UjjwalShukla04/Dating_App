@@ -19,6 +19,8 @@ const seedData = () => {
         gender: "Female",
         date_of_birth: "1995-05-15T00:00:00.000Z",
         bio: "Loves hiking and coffee. Looking for a travel buddy!",
+        photoUrl:
+          "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
       },
     },
     {
@@ -28,6 +30,8 @@ const seedData = () => {
         gender: "Male",
         date_of_birth: "1992-08-20T00:00:00.000Z",
         bio: "Tech enthusiast and foodie. Let's grab tacos.",
+        photoUrl:
+          "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400",
       },
     },
     {
@@ -37,6 +41,30 @@ const seedData = () => {
         gender: "Other",
         date_of_birth: "1998-12-10T00:00:00.000Z",
         bio: "Artist and dreamer. Always sketching.",
+        photoUrl:
+          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400",
+      },
+    },
+    {
+      phone: "9998887777",
+      profile: {
+        full_name: "Diana Prince",
+        gender: "Female",
+        date_of_birth: "1994-03-25T00:00:00.000Z",
+        bio: "Adventure seeker. Love dogs!",
+        photoUrl:
+          "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400",
+      },
+    },
+    {
+      phone: "5556667777",
+      profile: {
+        full_name: "Ethan Hunt",
+        gender: "Male",
+        date_of_birth: "1990-07-12T00:00:00.000Z",
+        bio: "Mission possible. Always on the move.",
+        photoUrl:
+          "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400",
       },
     },
   ];
